@@ -6,6 +6,26 @@ export class Game extends Scene {
   }
 
   create() {
+    const music = this.sound.add("music");
+    music.setLoop(true);
+    music.play();
+    this.timeouts = [];
+    this.events.on(
+      "shutdown",
+      function () {
+        this.timeouts.forEach((t) => clearTimeout(t));
+        this.timeouts = [];
+      }.bind(this),
+      this,
+    );
+    this.events.on(
+      "destroy",
+      function () {
+        this.timeouts.forEach((t) => clearTimeout(t));
+        this.timeouts = [];
+      }.bind(this),
+      this,
+    );
     this.cameras.main.setZoom(1.5);
     this.cameras.main.scrollX = -200;
     this.cameras.main.scrollY = -150;
@@ -65,20 +85,26 @@ export class Game extends Scene {
         this.attack1.enableBody(false, null, null, true, true);
         this.anims.play("kill", this.attack1);
         this.attack1Enabled = false;
-        setTimeout(() => {
-          this.attack1Enabled = true;
-        }, 2000);
+        this.timeouts.push(
+          setTimeout(() => {
+            this.attack1Enabled = true;
+          }, 2000),
+        );
         this.cooldown.setFrame(0);
         for (let i = 1; i < 4; i++) {
-          setTimeout(() => {
-            this.cooldown.setFrame(i);
-          }, 500 * i);
+          this.timeouts.push(
+            setTimeout(() => {
+              this.cooldown.setFrame(i);
+            }, 500 * i),
+          );
         }
 
-        setTimeout(() => {
-          this.attack1.setVisible(false);
-          this.attack1.disableBody(true, true);
-        }, 1000);
+        this.timeouts.push(
+          setTimeout(() => {
+            this.attack1.setVisible(false);
+            this.attack1.disableBody(true, true);
+          }, 1000),
+        );
       }
     });
     //PLAYER
@@ -87,7 +113,6 @@ export class Game extends Scene {
       .setCollideWorldBounds(true);
     this.cameras.main.setBackgroundColor(0xffffff);
     // this.add.image(512, 384, "background").setAlpha(0.5);
-
     //Enemies
     this.enemies = [];
     this.wave1 = function () {
@@ -106,70 +131,114 @@ export class Game extends Scene {
         });
         this.physics.add.overlap(enemy, this.player, () => {
           this.health -= 5;
+          this.player.setTint(0xff0000);
+          this.timeouts.push(
+            setTimeout(
+              function () {
+                this.player.setTint();
+              }.bind(this),
+              50,
+            ),
+          );
           enemy.destroy();
 
           this.enemies.splice(this.enemies.indexOf(enemy), 1);
         });
       }
       //stage 2
-      setTimeout(() => {
-        this.stage = 2;
-        for (let i = 0; i < 10; i++) {
-          let enemy = this.physics.add.sprite(100 + i * 50, 400, "enemy");
-          this.enemies.push(enemy);
-          this.physics.add.overlap(enemy, this.attack1, () => {
-            enemy.destroy();
-            this.enemies.splice(this.enemies.indexOf(enemy), 1);
-          });
-          this.physics.add.overlap(enemy, this.player, () => {
-            this.health -= 5;
-            enemy.destroy();
+      this.timeouts.push(
+        setTimeout(() => {
+          this.stage = 2;
+          for (let i = 0; i < 10; i++) {
+            let enemy = this.physics.add.sprite(100 + i * 50, 400, "enemy");
+            this.enemies.push(enemy);
+            this.physics.add.overlap(enemy, this.attack1, () => {
+              enemy.destroy();
+              this.enemies.splice(this.enemies.indexOf(enemy), 1);
+            });
+            this.physics.add.overlap(enemy, this.player, () => {
+              this.health -= 5;
+              this.player.setTint(0xff0000);
+              this.timeouts.push(
+                setTimeout(
+                  function () {
+                    this.player.setTint();
+                  }.bind(this),
+                  50,
+                ),
+              );
+              enemy.destroy();
 
-            this.enemies.splice(this.enemies.indexOf(enemy), 1);
-          });
-        }
-      }, 5000);
-      setTimeout(() => {
-        this.stage = 3;
-        for (let i = 0; i < 10; i++) {
-          let enemy = this.physics.add.sprite(100 + i * 50, 200, "enemy");
-          this.enemies.push(enemy);
-          this.physics.add.overlap(enemy, this.attack1, () => {
-            enemy.destroy();
-            this.enemies.splice(this.enemies.indexOf(enemy), 1);
-          });
-          this.physics.add.overlap(enemy, this.player, () => {
-            this.health -= 5;
-            enemy.destroy();
-
-            this.enemies.splice(this.enemies.indexOf(enemy), 1);
-          });
-        }
-      }, 6700);
-      setTimeout(() => {
-        this.stage = 4;
-        for (let i = 0; i < 8; i++) {
-          let enemy = this.physics.add.sprite(100 + i * 110, 400, "enemy");
-          this.enemies.push(enemy);
-          this.physics.add.overlap(enemy, this.attack1, () => {
-            enemy.destroy();
-            this.enemies.splice(this.enemies.indexOf(enemy), 1);
-          });
-          this.physics.add.overlap(enemy, this.player, () => {
-            this.health -= 5;
-            enemy.destroy();
-
-            this.enemies.splice(this.enemies.indexOf(enemy), 1);
-          });
-        }
-      }, 10000);
-      setTimeout(() => {
-        announcement.destroy();
-      }, 1500);
+              this.enemies.splice(this.enemies.indexOf(enemy), 1);
+            });
+          }
+        }, 5000),
+      );
+      this.timeouts.push(
+        setTimeout(() => {
+          this.stage = 3;
+          for (let i = 0; i < 10; i++) {
+            let enemy = this.physics.add.sprite(100 + i * 50, 200, "enemy");
+            this.enemies.push(enemy);
+            this.physics.add.overlap(enemy, this.attack1, () => {
+              enemy.destroy();
+              this.enemies.splice(this.enemies.indexOf(enemy), 1);
+            });
+            this.physics.add.overlap(enemy, this.player, () => {
+              this.health -= 5;
+              enemy.destroy();
+              this.player.setTint(0xff0000);
+              this.timeouts.push(
+                setTimeout(
+                  function () {
+                    this.player.setTint();
+                  }.bind(this),
+                  50,
+                ),
+              );
+              this.enemies.splice(this.enemies.indexOf(enemy), 1);
+            });
+          }
+        }, 6700),
+      );
+      this.timeouts.push(
+        setTimeout(() => {
+          this.stage = 4;
+          for (let i = 0; i < 8; i++) {
+            let enemy = this.physics.add.sprite(100 + i * 110, 400, "enemy");
+            this.enemies.push(enemy);
+            this.physics.add.overlap(enemy, this.attack1, () => {
+              enemy.destroy();
+              this.enemies.splice(this.enemies.indexOf(enemy), 1);
+            });
+            this.physics.add.overlap(enemy, this.player, () => {
+              this.health -= 5;
+              enemy.destroy();
+              this.player.setTint(0xff0000);
+              this.timeouts.push(
+                setTimeout(
+                  function () {
+                    this.player.setTint();
+                  }.bind(this),
+                  50,
+                ),
+              );
+              this.enemies.splice(this.enemies.indexOf(enemy), 1);
+            });
+          }
+        }, 10000),
+      );
+      this.timeouts.push(
+        setTimeout(() => {
+          announcement.destroy();
+        }, 1500),
+      );
     }.bind(this);
-    setTimeout(() => {
-      this.wave1();
-    }, 2000);
+    this.timeouts.push(
+      setTimeout(() => {
+        this.wave1();
+      }, 2000),
+    );
 
     //LOWER_UP
     this.negSpeed = makeHoverable(
